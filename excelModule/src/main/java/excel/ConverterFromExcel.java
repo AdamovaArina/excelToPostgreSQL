@@ -13,7 +13,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class Converter {
+public class ConverterFromExcel {
     public static ArrayList<Table> readFromExcel(FileInputStream file) throws IOException {
         HSSFWorkbook myExcelBook = new HSSFWorkbook(file);
         ArrayList<Table> tables = new ArrayList<>();

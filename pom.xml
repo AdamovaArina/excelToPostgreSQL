@@ -12,6 +12,7 @@
         <module>beansModule</module>
         <module>excelModule</module>
         <module>uiModule</module>
+        <module>dbModule</module>
     </modules>
 
     <properties>

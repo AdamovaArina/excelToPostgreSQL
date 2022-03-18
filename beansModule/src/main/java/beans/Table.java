@@ -13,6 +13,20 @@ public class Table {
         return table;
     }
 
+    private void rowsLengthFix(){
+        int maxLength = 0;
+        for (int i = 0; i < getTable().size(); i++){
+            if (getTable().get(i).getRow().size() > maxLength){
+                maxLength = getTable().get(i).getRow().size();
+            }
+        }
+        for (int j = 0; j < getTable().size(); j++){
+            while (getTable().get(j).getRow().size() < maxLength){
+                getTable().get(j).getRow().add(new Cell("null", CellType.BLANK));
+            }
+        }
+    }
+
     private boolean isRectangle(){
         if (getTable() == null){
             return false;
@@ -27,9 +41,15 @@ public class Table {
     }
 
     private boolean columnTypeCheck(int idx){
-        CellType baseType = getTable().get(1).getRow().get(idx).getType();
+        CellType baseType = CellType.BLANK;
+        for (int j = 1; j <getTable().size(); j++){
+            if(getTable().get(j).getRow().get(idx).getType() != CellType.BLANK){
+                baseType = getTable().get(j).getRow().get(idx).getType();
+                break;
+            }
+        }
         if (getTable().size() > 1){
-            for (int i = 2; i < getTable().size(); i++){
+            for (int i = 1; i < getTable().size(); i++){
                 if (baseType != getTable().get(i).getRow().get(idx).getType() &&
                         getTable().get(i).getRow().get(idx).getType() != CellType.BLANK &&
                         getTable().get(i).getRow().get(idx).getType() != null){
@@ -42,7 +62,7 @@ public class Table {
 
     public boolean typeCheck(){
         if (!isRectangle()){
-            return false;
+            rowsLengthFix();
         }
         for (int i = 0; i < getTable().get(0).getRow().size(); i++){
             if (!columnTypeCheck(i)){
