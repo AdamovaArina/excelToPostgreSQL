@@ -12,38 +12,92 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class ConverterFromExcel {
     public static ArrayList<Table> readFromExcel(FileInputStream file) throws IOException {
         HSSFWorkbook myExcelBook = new HSSFWorkbook(file);
         ArrayList<Table> tables = new ArrayList<>();
+        ArrayList<Integer> bounds;
+        ArrayList<Integer> columnNamesBounds;
+        Row columnNames;
+        Scanner sc = new Scanner(System.in);
+        String answer;
+        String tableName;
+        Table bufferTable;
         for (int i = 0; i < myExcelBook.getNumberOfSheets(); i++){
             HSSFSheet myExcelSheet = myExcelBook.getSheetAt(i);
-            Table table = new Table();
-            HSSFCell bufferCell;
-            int realNumberOfRows = myExcelSheet.getPhysicalNumberOfRows();
-            for(int j = 0; j < realNumberOfRows; j++){
-                Row bufferRow = new Row();
-                if (myExcelSheet.getRow(j) == null){
-                    realNumberOfRows++;
-                } else {
-                    int realNumberOfCells = myExcelSheet.getRow(j).getPhysicalNumberOfCells();
-                    for(int k = 0; k < realNumberOfCells; k++){
-                        bufferCell = myExcelSheet.getRow(j).getCell(k);
-                        if (bufferCell == null){
-                            realNumberOfCells++;
-                        }
-                        bufferRow.getRow().add(convertCell(bufferCell));
-                    }
-                    if (!bufferRow.isEmpty()){
-                        table.getTable().add(bufferRow);
-                    }
+            System.out.println("Выберете строку с заголовками столбцов");
+            columnNamesBounds = readNameBounds();
+            columnNames = readColumnNames(myExcelSheet, columnNamesBounds.get(0), columnNamesBounds.get(1), columnNamesBounds.get(2));
+            while (true){
+                System.out.println("Выбрать еще одну таблицу на данном листе? (д/н)");
+                answer = sc.nextLine();
+                if (answer.equals("д")){
+                    System.out.println("Введите имя таблицы");
+                    tableName = sc.nextLine();
+                    bounds = readBounds();
+                    bufferTable = readTableFromExcel(myExcelSheet, bounds.get(0), bounds.get(1), bounds.get(2), bounds.get(3));
+                    bufferTable.setColumnNames(columnNames);
+                    bufferTable.setName(tableName);
+                    tables.add(bufferTable);
+                } else if (answer.equals("н")){
+                    break;
                 }
             }
-            tables.add(table);
+
         }
         myExcelBook.close();
         return tables;
+    }
+
+    private static ArrayList<Integer> readBounds(){
+        ArrayList<Integer> bounds = new ArrayList<>();
+        Scanner sc = new Scanner(System.in);
+        System.out.println("fromRow: ");
+        bounds.add(sc.nextInt());
+        System.out.println("toRow: ");
+        bounds.add(sc.nextInt());
+        System.out.println("fromColumn: ");
+        bounds.add(sc.nextInt());
+        System.out.println("toColumn: ");
+        bounds.add(sc.nextInt());
+        return bounds;
+    }
+
+    private static ArrayList<Integer> readNameBounds(){
+        ArrayList<Integer> bounds = new ArrayList<>();
+        Scanner sc = new Scanner(System.in);
+        System.out.println("fromRow: ");
+        bounds.add(sc.nextInt());
+        System.out.println("fromColumn: ");
+        bounds.add(sc.nextInt());
+        System.out.println("toColumn: ");
+        bounds.add(sc.nextInt());
+        return bounds;
+    }
+
+    private static Row readColumnNames(HSSFSheet myExcelSheet, int line, int fromColumn, int toColumn){
+        Row row = new Row();
+        for (int i = fromColumn; i <= toColumn; i++){
+            row.getRow().add(convertCell(myExcelSheet.getRow(line).getCell(i)));
+        }
+        return row;
+    }
+
+    private static Table readTableFromExcel(HSSFSheet myExcelSheet, int fromRow, int toRow, int fromColumn, int toColumn){
+        Table table = new Table();
+        for(int i = fromRow; i <= toRow; i++){
+            Row bufferRow = new Row();
+            for(int j = fromColumn; j <= toColumn; j++){
+                bufferRow.getRow().add(convertCell(myExcelSheet.getRow(i).getCell(j)));
+            }
+            if (!bufferRow.isEmpty()){
+                table.getTable().add(bufferRow);
+            }
+
+        }
+        return table;
     }
 
     private static Cell convertCell(HSSFCell initCell){

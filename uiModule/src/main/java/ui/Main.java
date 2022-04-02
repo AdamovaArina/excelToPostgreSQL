@@ -20,6 +20,7 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         if(buffer != null){
             try {
                 ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer.get(0));
@@ -31,10 +32,10 @@ public class Main {
         }
 
         /*try {
-            ArrayList<Table> buffer = Converter.readFromExcel(openFile());
+            ArrayList<Table> buffer = ConverterFromExcel.readFromExcel(openFile());
             for (Table table : buffer) {
-                System.out.println(table.typeCheck());
                 table.printTable();
+                System.out.println();
             }
         } catch (IOException e) {
             e.printStackTrace();

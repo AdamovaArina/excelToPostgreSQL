@@ -3,9 +3,13 @@ package beans;
 import java.util.ArrayList;
 
 public class Table {
+    private String name;
+    private Row columnNames;
     private ArrayList<Row> table;
 
     public Table(){
+        name = null;
+        columnNames = new Row();
         table = new ArrayList<>();
     }
 
@@ -13,16 +17,32 @@ public class Table {
         return table;
     }
 
+    public String getName(){
+        return name;
+    }
+
+    public Row getColumnNames(){
+        return columnNames;
+    }
+
+    public void setColumnNames(Row columnNames){
+        this.columnNames = columnNames;
+    }
+
+    public void setName(String name){
+        this.name = name;
+    }
+
     private void rowsLengthFix(){
         int maxLength = 0;
-        for (int i = 0; i < getTable().size(); i++){
+        for (int i = 0; i < columnNames.getRow().size(); i++){
             if (getTable().get(i).getRow().size() > maxLength){
                 maxLength = getTable().get(i).getRow().size();
             }
         }
-        for (int j = 0; j < getTable().size(); j++){
+        for (int j = 0; j < columnNames.getRow().size(); j++){
             while (getTable().get(j).getRow().size() < maxLength){
-                getTable().get(j).getRow().add(new Cell("null", CellType.BLANK));
+                getTable().get(j).getRow().add(new Cell(null, CellType.BLANK));
             }
         }
     }
@@ -73,6 +93,8 @@ public class Table {
     }
 
     public void printTable(){
+        System.out.println(name);
+        System.out.println(columnNames.toString());
         for (Row row : table) {
             System.out.println(row.toString());
         }
