@@ -23,23 +23,15 @@ public class Main {
 
         if(buffer != null){
             try {
-                ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer.get(0));
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                for (Table table : buffer) {
+                    ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), table);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
         } else {
             System.out.println("Все не ок");
         }
-
-        /*try {
-            ArrayList<Table> buffer = ConverterFromExcel.readFromExcel(openFile());
-            for (Table table : buffer) {
-                table.printTable();
-                System.out.println();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
 
     }
     private static FileInputStream openFile(){

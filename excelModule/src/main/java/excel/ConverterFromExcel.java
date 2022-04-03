@@ -29,7 +29,8 @@ public class ConverterFromExcel {
             HSSFSheet myExcelSheet = myExcelBook.getSheetAt(i);
             System.out.println("Выберете строку с заголовками столбцов");
             columnNamesBounds = readNameBounds();
-            columnNames = readColumnNames(myExcelSheet, columnNamesBounds.get(0), columnNamesBounds.get(1), columnNamesBounds.get(2));
+            columnNames = readColumnNames(myExcelSheet, columnNamesBounds.get(0),
+                    columnNamesBounds.get(1), columnNamesBounds.get(2));
             while (true){
                 System.out.println("Выбрать еще одну таблицу на данном листе? (д/н)");
                 answer = sc.nextLine();
@@ -37,7 +38,8 @@ public class ConverterFromExcel {
                     System.out.println("Введите имя таблицы");
                     tableName = sc.nextLine();
                     bounds = readBounds();
-                    bufferTable = readTableFromExcel(myExcelSheet, bounds.get(0), bounds.get(1), bounds.get(2), bounds.get(3));
+                    bufferTable = readTableFromExcel(myExcelSheet, bounds.get(0),
+                            bounds.get(1), bounds.get(2), bounds.get(3));
                     bufferTable.setColumnNames(columnNames);
                     bufferTable.setName(tableName);
                     tables.add(bufferTable);

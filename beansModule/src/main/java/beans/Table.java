@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Table {
     private String name;
     private Row columnNames;
-    private ArrayList<Row> table;
+    private final ArrayList<Row> table;
 
     public Table(){
         name = null;

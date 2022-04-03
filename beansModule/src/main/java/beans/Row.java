@@ -3,7 +3,7 @@ package beans;
 import java.util.ArrayList;
 
 public class Row {
-    private ArrayList<Cell> row;
+    private final ArrayList<Cell> row;
 
     public Row(){
         row = new ArrayList<>();

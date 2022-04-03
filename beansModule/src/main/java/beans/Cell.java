@@ -1,8 +1,8 @@
 package beans;
 
 public class Cell {
-    private String value;
-    private CellType type;
+    private final String value;
+    private final CellType type;
 
     public Cell(String value, CellType type){
         this.value = value;

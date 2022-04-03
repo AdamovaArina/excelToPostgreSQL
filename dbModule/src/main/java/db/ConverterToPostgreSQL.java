@@ -1,5 +1,6 @@
 package db;
 
+import beans.Cell;
 import beans.CellType;
 import beans.Table;
 
@@ -12,23 +13,19 @@ public class ConverterToPostgreSQL {
         if (dbConnection == null){
             throw new SQLException("Соединение с базой данных не установлено");
         }
-        Statement statement = null;
 
-        try {
-            statement = dbConnection.createStatement();
+        try (Statement statement = dbConnection.createStatement()) {
             statement.execute(createTable(table));
             System.out.println("Table is created!");
+            statement.execute(fillTable(table));
+            System.out.println("Table is filled!");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
         }
     }
 
-    public static String createTable(Table table){
+    private static String createTable(Table table){
         StringBuilder sb = new StringBuilder("CREATE TABLE ");
         sb.append("\"").append(table.getName()).append("\"").append(" ( id serial PRIMARY KEY, ");
         CellType bufferType = null;
@@ -50,6 +47,29 @@ public class ConverterToPostgreSQL {
         }
         sb.append(" ); ");
         return sb.toString();
+    }
+
+    private static String fillTable(Table table){
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < table.getTable().size(); i++){
+            sb.append("insert into \"").append(table.getName()).append("\" values ( default, ");
+            for (int j = 0; j < table.getTable().get(i).getRow().size(); j++){
+                sb.append(cellToString(table.getTable().get(i).getRow().get(j)));
+                if (j != table.getTable().get(i).getRow().size() - 1){
+                    sb.append(", ");
+                }
+            }
+            sb.append(" ); ");
+        }
+        return sb.toString();
+    }
+
+    private static String cellToString(Cell cell){
+        StringBuilder sb = new StringBuilder();
+        return switch (cell.getType()) {
+            case STRING, DATE -> sb.append("'").append(cell.getValue()).append("'").toString();
+            default -> sb.append(cell.getValue()).toString();
+        };
     }
 
     private static String typeToString(CellType type){
