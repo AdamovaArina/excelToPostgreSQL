@@ -15,7 +15,8 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class ConverterFromExcel {
-    public static ArrayList<Table> readFromExcel(FileInputStream file) throws IOException {
+    public static ArrayList<Table> readFromExcel(FileInputStream file, int colFrom, int colTo, int rowFrom,
+                                                 int rowTo) throws IOException {
         HSSFWorkbook myExcelBook = new HSSFWorkbook(file);
         ArrayList<Table> tables = new ArrayList<>();
         ArrayList<Integer> bounds;
