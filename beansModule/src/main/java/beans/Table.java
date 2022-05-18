@@ -33,33 +33,6 @@ public class Table {
         this.name = name;
     }
 
-    private void rowsLengthFix(){
-        int maxLength = 0;
-        for (int i = 0; i < columnNames.getRow().size(); i++){
-            if (getTable().get(i).getRow().size() > maxLength){
-                maxLength = getTable().get(i).getRow().size();
-            }
-        }
-        for (int j = 0; j < columnNames.getRow().size(); j++){
-            while (getTable().get(j).getRow().size() < maxLength){
-                getTable().get(j).getRow().add(new Cell(null, CellType.BLANK));
-            }
-        }
-    }
-
-    private boolean isRectangle(){
-        if (getTable() == null){
-            return false;
-        }
-        int numberOfCells = getTable().get(0).getRow().size();
-        for (int i = 1; i < this.getTable().size(); i++){
-            if (numberOfCells != getTable().get(i).getRow().size()){
-                return false;
-            }
-        }
-        return true;
-    }
-
     private boolean columnTypeCheck(int idx){
         CellType baseType = CellType.BLANK;
         for (int j = 1; j <getTable().size(); j++){
@@ -81,9 +54,6 @@ public class Table {
     }
 
     public boolean typeCheck(){
-        if (!isRectangle()){
-            rowsLengthFix();
-        }
         for (int i = 0; i < getTable().get(0).getRow().size(); i++){
             if (!columnTypeCheck(i)){
                 return false;

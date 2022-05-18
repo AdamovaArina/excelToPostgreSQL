@@ -4,23 +4,21 @@ import beans.Cell;
 import beans.CellType;
 import beans.Table;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public class ConverterToPostgreSQL {
-    public static void createAndFillTable(Connection dbConnection, Table table) throws SQLException {
-        if (dbConnection == null){
-            throw new SQLException("Соединение с базой данных не установлено");
-        }
-
+    public static void createAndFillTable(Connection dbConnection, Table table) throws  IOException {
         try (Statement statement = dbConnection.createStatement()) {
-            statement.execute(createTable(table));
-            System.out.println("Table is created!");
-            statement.execute(fillTable(table));
-            System.out.println("Table is filled!");
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            if (table.typeCheck()){
+                statement.execute(createTable(table));
+                statement.execute(fillTable(table));
+            } else {
+                throw new IOException("Некорректные типы данных в таблице");
+            }
+        } catch (NullPointerException | SQLException e) {
             e.printStackTrace();
         }
     }
