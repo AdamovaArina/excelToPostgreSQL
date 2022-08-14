@@ -12,7 +12,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ConverterFromExcel {
+public class XlsConverterFromExcel {
     public static Table readTableFromExcel(FileInputStream file, int sheetNumber, int nameRow, int fromCol, int toCol,
                                            int fromRow, int toRow, String name) throws IOException {
         Table result;

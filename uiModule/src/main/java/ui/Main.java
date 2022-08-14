@@ -3,7 +3,7 @@ package ui;
 import beans.Table;
 import db.ConnectorToPostgreSQL;
 import db.ConverterToPostgreSQL;
-import excel.ConverterFromExcel;
+import excel.XlsConverterFromExcel;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,21 +14,14 @@ import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
-import java.io.File;
-
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.util.CellRangeAddress;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class Main extends Application {
-    public static void main(String[] args) {
-        Application.launch();
-    }
-
+public class Main extends Application{
     private static Stage previewStage;
     private static Label data1;
     private static Label data2;
@@ -42,6 +35,9 @@ public class Main extends Application {
     private static String tableName;
     private static int sheetNumber;
 
+    public static void main(String[] args) {
+        Application.launch();
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -64,6 +60,8 @@ public class Main extends Application {
     }
 
     private static void showFilePreview(Stage parent, File file) throws IOException {
+
+
         FileInputStream is = new FileInputStream(file);
         HSSFWorkbook book = new HSSFWorkbook(is);
         HSSFSheet sheet = book.getSheetAt(sheetNumber);
@@ -72,7 +70,17 @@ public class Main extends Application {
         int columnLast = getLastColNum(sheet);
 
         VBox vb = new VBox();
-        GridPane gp = createGridPane(sheet, rowLast, columnLast);
+
+        long bufferTime = System.nanoTime(); // для тестирования
+        ProxyTable pt = ProxyTableConverter.createProxyTable(sheet, rowLast, columnLast);
+        System.out.println("Считывание данных из файла");
+        System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
+
+        bufferTime = System.nanoTime(); // для тестирования
+        GridPane gp = createGridPane(pt, sheet);
+        System.out.println("Создание GridPane");
+        System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
+
         HBox hb = new HBox();
         hb.getChildren().addAll(createOkButton(file), createCancelButton());
         hb.setSpacing(10);
@@ -91,6 +99,36 @@ public class Main extends Application {
 
         previewStage.setScene(scene);
         previewStage.show();
+
+
+    }
+
+    public static GridPane createGridPane(ProxyTable pt, HSSFSheet sheet){
+        GridPane gp = new GridPane();
+        gp.setStyle("-fx-background-color: white");
+        for (int idx = 0; idx < pt.getCells().size(); idx++){
+            var current = pt.getCells().get(idx);
+            var l = createLabel(current.getValue(), current.getWidth(), current.getHeight(),
+                    current.getX(), current.getY());
+            gp.add(l, current.getX(), current.getY(), current.getWidthCount(), current.getHeightCount());
+        }
+
+        int rowLast = sheet.getLastRowNum();
+        int columnLast = getLastColNum(sheet);
+        //установка ширины столбцов
+        for (int i = 0; i <= columnLast; i++) {
+            gp.getColumnConstraints().add(new ColumnConstraints(2.0 * sheet.getColumnWidth(i) / 72));
+        }
+        //и строк
+        for (int j = 0; j <= rowLast; j++) {
+            if (sheet.getRow(j) != null) {
+                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getRow(j).getHeight() / 72));
+            } else {
+                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getDefaultRowHeight() / 72));
+            }
+        }
+
+        return gp;
     }
 
     private static Stage createSheetChooser(Stage parent, File file) throws IOException {
@@ -131,6 +169,20 @@ public class Main extends Application {
         return stage;
     }
 
+    private static int getLastColNum(HSSFSheet sheet) {
+        int columnLast = 0;
+        int rowLast = sheet.getLastRowNum();
+        for (int i = 0; i <= rowLast; ++i) {
+            var row = sheet.getRow(i);
+            if (row != null) {
+                if (row.getLastCellNum() > columnLast) {
+                    columnLast = row.getLastCellNum();
+                }
+            }
+        }
+        return columnLast;
+    }
+
     private static Label createLabel(String text, double width, double height, int col, int row) {
         var l = new Label(text);
         l.setMinWidth(width * 2.0 / 72);
@@ -148,7 +200,7 @@ public class Main extends Application {
             if (data1 != null) {
                 data1.setStyle(l.getStyle() + "-fx-background-color: white;");
             }
-            l.setStyle(l.getStyle() + "-fx-background-color: green;");
+            l.setStyle(l.getStyle() + "-fx-background-color: #b6d7a8;");
             fromCol = col;
             fromRow = row;
             data1 = l;
@@ -158,7 +210,7 @@ public class Main extends Application {
             if (data2 != null) {
                 data2.setStyle(l.getStyle() + "-fx-background-color: white;");
             }
-            l.setStyle(l.getStyle() + "-fx-background-color: darkgreen;");
+            l.setStyle(l.getStyle() + "-fx-background-color: #a7ca99;");
             toCol = col;
             toRow = row;
             data2 = l;
@@ -168,7 +220,7 @@ public class Main extends Application {
             if (header1 != null) {
                 header1.setStyle(l.getStyle() + "-fx-background-color: white;");
             }
-            l.setStyle(l.getStyle() + "-fx-background-color: blue;");
+            l.setStyle(l.getStyle() + "-fx-background-color: #91b9df;");
             nameRow = row;
             header1 = l;
         });
@@ -226,9 +278,12 @@ public class Main extends Application {
                     if (tableName == null || tableName.equals("")) {
                         throw new IOException("Не введено название таблицы");
                     }
-                    Table buffer = ConverterFromExcel.readTableFromExcel(new FileInputStream(file), sheetNumber,
+                    long bufferTime = System.nanoTime(); // для тестирования
+                    Table buffer = XlsConverterFromExcel.readTableFromExcel(new FileInputStream(file), sheetNumber,
                             nameRow, fromCol, toCol, fromRow, toRow, tableName);
                     ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer);
+                    System.out.println("Загрузка в бд");
+                    System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
                     Alert a = new Alert(Alert.AlertType.INFORMATION);
                     a.setTitle("Сообщение");
                     a.setHeaderText("Успешно");
@@ -301,90 +356,5 @@ public class Main extends Application {
         return textField;
     }
 
-    private static int getLastColNum(HSSFSheet sheet) {
-        int columnLast = 0;
-        int rowLast = sheet.getLastRowNum();
-        for (int i = 0; i <= rowLast; ++i) {
-            var row = sheet.getRow(i);
-            if (row != null) {
-                if (row.getLastCellNum() > columnLast) {
-                    columnLast = row.getLastCellNum();
-                }
-            }
-        }
-        return columnLast;
-    }
 
-    private static GridPane createGridPane(HSSFSheet sheet, int rowLast, int columnLast) {
-        GridPane gp = new GridPane();
-        gp.setStyle("-fx-background-color: white");
-        //создаем структуру gridpanel аналогичную excel таблице
-        for (int i = 0; i <= rowLast; ++i) {
-            var row = sheet.getRow(i);
-            for (int j = 0; j <= columnLast; ++j) {
-                //когда ячейка или строка не определена
-                if (row == null || row.getCell(j) == null) {
-                    int height;
-                    if (row == null) {
-                        height = sheet.getDefaultRowHeight();
-                    } else {
-                        height = row.getHeight();
-                    }
-                    var l = createLabel("", sheet.getColumnWidth(j), height, j, i);
-                    gp.add(l, j, i);
-                }
-                //когда определена
-                else {
-                    var c = row.getCell(j);
-                    CellRangeAddress r = null;
-                    //проверяем, не принадлежит ли ячейка объединению ячеек
-                    for (int k = 0; k < sheet.getMergedRegions().size(); ++k) {
-                        if (sheet.getMergedRegions().get(k).isInRange(c)) {
-                            r = sheet.getMergedRegions().get(k);
-                        }
-                    }
-                    //если не принадлежит - добавляем
-                    if (r == null) {
-                        var l = createLabel(c.toString(), sheet.getColumnWidth(j), row.getHeight(), j, i);
-                        gp.add(l, j, i);
-                    } else {
-                        if (r.getFirstRow() == i && r.getFirstColumn() == j) {
-                            int width = 0;
-                            int height = 0;
-                            for (int k = r.getFirstColumn(); k <= r.getLastColumn(); ++k) {
-                                width += sheet.getColumnWidth(k);
-                            }
-                            for (int k = r.getFirstRow(); k <= r.getLastRow(); ++k) {
-                                var tmp = sheet.getRow(k);
-                                if (tmp == null) {
-                                    height += sheet.getDefaultRowHeight();
-                                } else {
-                                    height += tmp.getHeight();
-                                }
-                            }
-                            var l = createLabel(c.toString(), width, height, j, i);
-                            gp.add(l, j, i, r.getLastColumn() - j + 1, r.getLastRow() - i + 1);
-                        }
-                    }
-
-                }
-            }
-        }
-
-        //установка ширины столбцов
-        for (int i = 0; i <= columnLast; i++) {
-            gp.getColumnConstraints().add(new ColumnConstraints(2.0 * sheet.getColumnWidth(i) / 72));
-        }
-        //и строк
-        for (int j = 0; j <= rowLast; j++) {
-            if (sheet.getRow(j) != null) {
-                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getRow(j).getHeight() / 72));
-            } else {
-                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getDefaultRowHeight() / 72));
-            }
-        }
-        //для отладки можно вывести сетку
-        //gp.setGridLinesVisible(true);
-        return gp;
-    }
 }
