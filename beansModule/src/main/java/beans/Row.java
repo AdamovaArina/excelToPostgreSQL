@@ -3,13 +3,13 @@ package beans;
 import java.util.ArrayList;
 
 public class Row {
-    private final ArrayList<Cell> row;
+    private final ArrayList<TableCell> row;
 
     public Row(){
         row = new ArrayList<>();
     }
 
-    public ArrayList<Cell> getRow(){
+    public ArrayList<TableCell> getRow(){
         return row;
     }
 
@@ -24,7 +24,7 @@ public class Row {
 
     public String toString(){
         StringBuilder stringBuilder = new StringBuilder();
-        for (Cell cell : row) {
+        for (TableCell cell : row) {
             stringBuilder.append(cell.getValue()).append(" ");
         }
         return stringBuilder.toString();

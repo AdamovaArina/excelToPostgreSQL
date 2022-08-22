@@ -1,6 +1,6 @@
 package excel;
 
-import beans.Cell;
+import beans.TableCell;
 import beans.CellType;
 import beans.Row;
 import beans.Table;
@@ -56,7 +56,7 @@ public class XlsxConverterFromExcel {
         return table;
     }
 
-    private static Cell convertCell(XSSFCell initCell){
+    private static TableCell convertCell(XSSFCell initCell){
         String value = null;
         CellType type = null;
         if (initCell == null){
@@ -96,6 +96,6 @@ public class XlsxConverterFromExcel {
                     break;
             }
         }
-        return new Cell(value, type);
+        return new TableCell(value, type);
     }
 }

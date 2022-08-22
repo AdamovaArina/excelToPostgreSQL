@@ -1,6 +1,6 @@
 package db;
 
-import beans.Cell;
+import beans.TableCell;
 import beans.CellType;
 import beans.Table;
 
@@ -62,7 +62,7 @@ public class ConverterToPostgreSQL {
         return sb.toString();
     }
 
-    private static String cellToString(Cell cell){
+    private static String cellToString(TableCell cell){
         StringBuilder sb = new StringBuilder();
         return switch (cell.getType()) {
             case STRING, DATE -> sb.append("'").append(cell.getValue()).append("'").toString();

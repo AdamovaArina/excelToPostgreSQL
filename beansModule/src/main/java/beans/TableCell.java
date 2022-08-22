@@ -1,10 +1,10 @@
 package beans;
 
-public class Cell {
+public class TableCell {
     private final String value;
     private final CellType type;
 
-    public Cell(String value, CellType type){
+    public TableCell(String value, CellType type){
         this.value = value;
         this.type = type;
     }

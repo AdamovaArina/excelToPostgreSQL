@@ -3,7 +3,9 @@ package ui;
 import beans.Table;
 import db.ConnectorToPostgreSQL;
 import db.ConverterToPostgreSQL;
+import excel.ConverterFromExcel;
 import excel.XlsConverterFromExcel;
+import excel.XlsxConverterFromExcel;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,6 +18,10 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +39,8 @@ public class Main extends Application{
     private static int toRow;
     private static int nameRow;
     private static String tableName;
-    private static int sheetNumber;
+    //private static int sheetNumber;
+    private static Sheet currentSheet;
 
     public static void main(String[] args) {
         Application.launch();
@@ -59,30 +66,31 @@ public class Main extends Application{
         primaryStage.show();
     }
 
-    private static void showFilePreview(Stage parent, File file) throws IOException {
+    private static void showFilePreview(Stage parent) throws IOException {
 
+        //HSSFWorkbook book = new HSSFWorkbook(new FileInputStream(file));
+        //HSSFSheet sheet = book.getSheetAt(sheetNumber);
 
-        FileInputStream is = new FileInputStream(file);
-        HSSFWorkbook book = new HSSFWorkbook(is);
-        HSSFSheet sheet = book.getSheetAt(sheetNumber);
+        //Workbook book = new Workbook(new FileInputStream(file));
+        //Sheet sheet = book.getSheetAt(sheetNumber);
 
-        int rowLast = sheet.getLastRowNum();
-        int columnLast = getLastColNum(sheet);
+        int rowLast = currentSheet.getLastRowNum();
+        int columnLast = getLastColNum(currentSheet);
 
         VBox vb = new VBox();
 
         long bufferTime = System.nanoTime(); // для тестирования
-        ProxyTable pt = ProxyTableConverter.createProxyTable(sheet, rowLast, columnLast);
+        ProxyTable pt = ProxyTableConverter.createProxyTable(currentSheet, rowLast, columnLast);
         System.out.println("Считывание данных из файла");
         System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
 
         bufferTime = System.nanoTime(); // для тестирования
-        GridPane gp = createGridPane(pt, sheet);
+        GridPane gp = createGridPane(pt, currentSheet);
         System.out.println("Создание GridPane");
         System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
 
         HBox hb = new HBox();
-        hb.getChildren().addAll(createOkButton(file), createCancelButton());
+        hb.getChildren().addAll(createOkButton(), createCancelButton());
         hb.setSpacing(10);
         vb.getChildren().addAll(gp, createTableNameInput(), hb);
         vb.setSpacing(10);
@@ -103,7 +111,35 @@ public class Main extends Application{
 
     }
 
-    public static GridPane createGridPane(ProxyTable pt, HSSFSheet sheet){
+    /*public static GridPane createGridPane(ProxyTable pt, HSSFSheet sheet){
+        GridPane gp = new GridPane();
+        gp.setStyle("-fx-background-color: white");
+        for (int idx = 0; idx < pt.getCells().size(); idx++){
+            var current = pt.getCells().get(idx);
+            var l = createLabel(current.getValue(), current.getWidth(), current.getHeight(),
+                    current.getX(), current.getY());
+            gp.add(l, current.getX(), current.getY(), current.getWidthCount(), current.getHeightCount());
+        }
+
+        int rowLast = sheet.getLastRowNum();
+        int columnLast = getLastColNum(sheet);
+        //установка ширины столбцов
+        for (int i = 0; i <= columnLast; i++) {
+            gp.getColumnConstraints().add(new ColumnConstraints(2.0 * sheet.getColumnWidth(i) / 72));
+        }
+        //и строк
+        for (int j = 0; j <= rowLast; j++) {
+            if (sheet.getRow(j) != null) {
+                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getRow(j).getHeight() / 72));
+            } else {
+                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getDefaultRowHeight() / 72));
+            }
+        }
+
+        return gp;
+    }*/
+
+    public static GridPane createGridPane(ProxyTable pt, Sheet sheet){
         GridPane gp = new GridPane();
         gp.setStyle("-fx-background-color: white");
         for (int idx = 0; idx < pt.getCells().size(); idx++){
@@ -133,7 +169,20 @@ public class Main extends Application{
 
     private static Stage createSheetChooser(Stage parent, File file) throws IOException {
         FileInputStream is = new FileInputStream(file);
-        HSSFWorkbook book = new HSSFWorkbook(is);
+        //HSSFWorkbook book = new HSSFWorkbook(is);
+
+        String name = file.getName();
+        int i = name.lastIndexOf('.');
+        String ext =  i > 0 ? name.substring(i + 1) : "";
+        Workbook book = switch (ext) {
+            case "xlsx" -> new XSSFWorkbook(new FileInputStream(file));
+            case "xls" -> new HSSFWorkbook(new FileInputStream(file));
+            default -> null;
+        };
+
+        if (book == null){
+            throw new IOException("Некорректное расширение");
+        }
 
         VBox vb = new VBox();
         vb.setAlignment(Pos.CENTER);
@@ -151,11 +200,11 @@ public class Main extends Application{
 
         ComboBox<Integer> cb = new ComboBox<>();
         ObservableList<Integer> listNames = FXCollections.observableArrayList();
-        for (int i = 1; i <= book.getNumberOfSheets(); i++){
-            listNames.add(i);
+        for (int j = 1; j <= book.getNumberOfSheets(); j++){
+            listNames.add(j);
         }
         cb.setItems(listNames);
-        cb.setOnAction(event -> sheetNumber = cb.getValue() - 1);
+        cb.setOnAction(event -> currentSheet = book.getSheetAt(cb.getValue() - 1));
 
         Label label = new Label("Выберите страницу файла");
         label.setStyle("-fx-font-size: 16px");
@@ -169,7 +218,21 @@ public class Main extends Application{
         return stage;
     }
 
-    private static int getLastColNum(HSSFSheet sheet) {
+    /*private static int getLastColNum(HSSFSheet sheet) {
+        int columnLast = 0;
+        int rowLast = sheet.getLastRowNum();
+        for (int i = 0; i <= rowLast; ++i) {
+            var row = sheet.getRow(i);
+            if (row != null) {
+                if (row.getLastCellNum() > columnLast) {
+                    columnLast = row.getLastCellNum();
+                }
+            }
+        }
+        return columnLast;
+    }*/
+
+    private static int getLastColNum(Sheet sheet) {
         int columnLast = 0;
         int rowLast = sheet.getLastRowNum();
         for (int i = 0; i <= rowLast; ++i) {
@@ -243,7 +306,8 @@ public class Main extends Application{
         btn.setOnAction(event -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Выберете файл");
-            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLS", "*.xls"));
+            //fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLS", "*.xls"));
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLSX", "*.xlsx", "XLS", "*.xls"));
             File file = fileChooser.showOpenDialog(null);
             if (file != null) { //если файл открылся
                 try {
@@ -267,7 +331,7 @@ public class Main extends Application{
         return btn;
     }
 
-    private static Button createOkButton(File file) {
+    private static Button createOkButton() {
         Button btn = new Button("Ок");
         btn.setStyle("-fx-font-size:16");
         btn.setMinWidth(60);
@@ -279,7 +343,7 @@ public class Main extends Application{
                         throw new IOException("Не введено название таблицы");
                     }
                     long bufferTime = System.nanoTime(); // для тестирования
-                    Table buffer = XlsConverterFromExcel.readTableFromExcel(new FileInputStream(file), sheetNumber,
+                    Table buffer = ConverterFromExcel.readTableFromExcel(currentSheet,
                             nameRow, fromCol, toCol, fromRow, toRow, tableName);
                     ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer);
                     System.out.println("Загрузка в бд");
@@ -316,7 +380,7 @@ public class Main extends Application{
         button.setAlignment(Pos.CENTER);
         button.setOnAction(event -> {
             try {
-                showFilePreview(stage, file);
+                showFilePreview(stage);
             } catch (IOException e) {
                 e.printStackTrace();
                 Alert al = new Alert(Alert.AlertType.ERROR);

@@ -4,44 +4,49 @@ import beans.TableCell;
 import beans.CellType;
 import beans.Row;
 import beans.Table;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class XlsConverterFromExcel {
-    public static Table readTableFromExcel(FileInputStream file, int sheetNumber, int nameRow, int fromCol, int toCol,
+public class ConverterFromExcel {
+    public static Table readTableFromExcel(Sheet sheet, int nameRow, int fromCol, int toCol,
                                            int fromRow, int toRow, String name) throws IOException {
         Table result;
-        HSSFWorkbook myExcelBook = new HSSFWorkbook(file);
+
+        /*String ext = getFileExtension(file);
+        Workbook myExcelBook = switch (ext) {
+            case "xlsx" -> new XSSFWorkbook(new FileInputStream(file));
+            case "xls" -> new HSSFWorkbook(new FileInputStream(file));
+            default -> null;
+        };
+
+        if (myExcelBook == null){
+            throw new IOException("Некорректное расширение файла");
+        }
+
         if (myExcelBook.getNumberOfSheets() - 1 < sheetNumber) {
             throw new IOException("Такой лист не существует");
-        }
+        }*/
         if (fromCol > toCol){
             throw new IOException("Некорректные номера столбцов");
         }
         if (fromRow > toRow){
             throw new IOException("Некорректные номера строк");
         }
-        result = readDataFromExcel(myExcelBook.getSheetAt(sheetNumber), fromRow, toRow, fromCol, toCol);
-        result.setColumnNames(readColumnNames(myExcelBook.getSheetAt(sheetNumber), nameRow, fromCol, toCol));
+        result = readDataFromExcel(sheet, fromRow, toRow, fromCol, toCol);
+        result.setColumnNames(readColumnNames(sheet, nameRow, fromCol, toCol));
         result.setName(name);
         return result;
     }
 
-
-    private static Row readColumnNames(HSSFSheet myExcelSheet, int line, int fromCol, int toCol){
-        Row row = new Row();
-        for (int i = fromCol; i <= toCol; i++){
-            row.getRow().add(convertCell(myExcelSheet.getRow(line).getCell(i)));
-        }
-        return row;
-    }
-
-    private static Table readDataFromExcel(HSSFSheet myExcelSheet, int fromRow, int toRow, int fromCol, int toCol){
+    private static Table readDataFromExcel(Sheet myExcelSheet, int fromRow, int toRow, int fromCol, int toCol){
         Table table = new Table();
         for(int i = fromRow; i <= toRow; i++){
             Row bufferRow = new Row();
@@ -56,7 +61,7 @@ public class XlsConverterFromExcel {
         return table;
     }
 
-    private static TableCell convertCell(HSSFCell initCell){
+    private static TableCell convertCell(Cell initCell){
         String value = null;
         CellType type = null;
         if (initCell == null){
@@ -98,4 +103,22 @@ public class XlsConverterFromExcel {
         }
         return new TableCell(value, type);
     }
+
+    private static Row readColumnNames(Sheet myExcelSheet, int line, int fromCol, int toCol){
+        Row row = new Row();
+        for (int i = fromCol; i <= toCol; i++){
+            row.getRow().add(convertCell(myExcelSheet.getRow(line).getCell(i)));
+        }
+        return row;
+    }
+
+    private static String getFileExtension(File file) {
+        if (file == null) {
+            return "";
+        }
+        String name = file.getName();
+        int i = name.lastIndexOf('.');
+        return i > 0 ? name.substring(i + 1) : "";
+    }
+
 }

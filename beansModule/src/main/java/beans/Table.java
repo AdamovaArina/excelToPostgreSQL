@@ -62,11 +62,11 @@ public class Table {
         return true;
     }
 
-    public void printTable(){
+    /*public void printTable(){
         System.out.println(name);
         System.out.println(columnNames.toString());
         for (Row row : table) {
             System.out.println(row.toString());
         }
-    }
+    }*/
 }
