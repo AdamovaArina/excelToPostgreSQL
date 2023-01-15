@@ -1,15 +1,10 @@
 package ui;
 
-import beans.CellType;
-import javafx.scene.layout.GridPane;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
+import beans.TableCellType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 
 public class ProxyTableConverter {
     /*public static ProxyTable createProxyTable(HSSFSheet sheet, int rowLast, int columnLast){
@@ -83,7 +78,7 @@ public class ProxyTableConverter {
                     } else {
                         height = row.getHeight();
                     }
-                    var proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), height, 1, 1,"", CellType.BLANK);
+                    var proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), height, 1, 1,"", TableCellType.BLANK);
                     pt.addCell(proxyCell);
                 }
                 //когда определена
@@ -149,25 +144,25 @@ public class ProxyTableConverter {
         }
     }*/
 
-    public static CellType convertCellType(Cell initCell){
+    public static TableCellType convertCellType(Cell initCell){
         if (initCell == null){
-            return CellType.BLANK;
+            return TableCellType.BLANK;
         } else {
             switch (initCell.getCellType()){
                 case NUMERIC:
                     if (DateUtil.isCellDateFormatted(initCell)){
-                        return CellType.DATE;
+                        return TableCellType.DATE;
                     } else {
-                        return CellType.NUMERIC;
+                        return TableCellType.NUMERIC;
                     }
                 case STRING:
-                    return CellType.STRING;
+                    return TableCellType.STRING;
                 case FORMULA:
-                    return CellType.FORMULA;
+                    return TableCellType.FORMULA;
                 case BOOLEAN:
-                    return CellType.BOOLEAN;
+                    return TableCellType.BOOLEAN;
                 default:
-                    return CellType.BLANK;
+                    return TableCellType.BLANK;
             }
         }
     }

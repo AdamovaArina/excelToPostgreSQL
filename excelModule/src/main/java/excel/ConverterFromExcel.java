@@ -1,124 +1,134 @@
 package excel;
 
 import beans.TableCell;
-import beans.CellType;
+import beans.TableCellType;
 import beans.Row;
 import beans.Table;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.TreeSet;
 
 public class ConverterFromExcel {
-    public static Table readTableFromExcel(Sheet sheet, int nameRow, int fromCol, int toCol,
-                                           int fromRow, int toRow, String name) throws IOException {
-        Table result;
-
-        /*String ext = getFileExtension(file);
-        Workbook myExcelBook = switch (ext) {
-            case "xlsx" -> new XSSFWorkbook(new FileInputStream(file));
-            case "xls" -> new HSSFWorkbook(new FileInputStream(file));
-            default -> null;
-        };
-
-        if (myExcelBook == null){
-            throw new IOException("Некорректное расширение файла");
-        }
-
-        if (myExcelBook.getNumberOfSheets() - 1 < sheetNumber) {
-            throw new IOException("Такой лист не существует");
-        }*/
-        if (fromCol > toCol){
-            throw new IOException("Некорректные номера столбцов");
-        }
-        if (fromRow > toRow){
-            throw new IOException("Некорректные номера строк");
-        }
-        result = readDataFromExcel(sheet, fromRow, toRow, fromCol, toCol);
-        result.setColumnNames(readColumnNames(sheet, nameRow, fromCol, toCol));
-        result.setName(name);
-        return result;
-    }
-
-    private static Table readDataFromExcel(Sheet myExcelSheet, int fromRow, int toRow, int fromCol, int toCol){
-        Table table = new Table();
-        for(int i = fromRow; i <= toRow; i++){
+    public static Table readTableFromExcel(Sheet sheet, TreeSet<Integer> rows, TreeSet<Integer> columns){
+        Table result = new Table();
+        for(Integer row : rows){
             Row bufferRow = new Row();
-            for(int j = fromCol; j <= toCol; j++){
-                bufferRow.getRow().add(convertCell(myExcelSheet.getRow(i).getCell(j)));
+            for(Integer column : columns){
+                bufferRow.getRow().add(convertCell(sheet.getRow(row).getCell(column)));
             }
-            if (!bufferRow.isEmpty()){
-                table.getTable().add(bufferRow);
+            if(!bufferRow.isEmpty()){
+                result.getTable().add(bufferRow);
             }
-
         }
-        return table;
+        return result;
     }
 
     private static TableCell convertCell(Cell initCell){
         String value = null;
-        CellType type = null;
+        TableCellType type = null;
         if (initCell == null){
-            type = CellType.BLANK;
+            type = TableCellType.BLANK;
         } else {
-            switch (initCell.getCellType()){
-                case _NONE:
-                case BLANK:
-                case ERROR:
-                    type = CellType.BLANK;
-                    break;
-                case NUMERIC:
-                    if (DateUtil.isCellDateFormatted(initCell)){
-                        type = CellType.DATE;
+            switch (initCell.getCellType()) {
+                case _NONE, BLANK, ERROR -> type = TableCellType.BLANK;
+                case NUMERIC -> {
+                    if (DateUtil.isCellDateFormatted(initCell)) {
+                        type = TableCellType.DATE;
                         value = initCell.getDateCellValue().toString();
                     } else {
-                        type = CellType.NUMERIC;
-                        double buffer = initCell.getNumericCellValue();
-                        value = Double.toString(buffer);
+                        type = TableCellType.NUMERIC;
+                        DataFormatter df = new DataFormatter();
+                        value = df.formatCellValue(initCell);
                     }
-                    break;
-                case STRING:
-                    type = CellType.STRING;
+                }
+                case STRING -> {
+                    type = TableCellType.STRING;
                     value = initCell.getStringCellValue();
-                    break;
-                case FORMULA:
-                    type = CellType.FORMULA;
+                    if(new TableCell(value, type).isDate()){
+                        type = TableCellType.DATE;
+                        try{
+                            value = stringToDate(value).toString();
+                        } catch (IOException ex){
+                            ex.printStackTrace();
+                        }
+                    } else if(new TableCell(value, type).isNumeric()){
+                        type = TableCellType.NUMERIC;
+                    }
+                }
+                case FORMULA -> {
+                    type = TableCellType.FORMULA;
                     value = initCell.getCellFormula();
-                    break;
-                case BOOLEAN:
-                    type = CellType.BOOLEAN;
-                    if (initCell.getBooleanCellValue()){
+                }
+                case BOOLEAN -> {
+                    type = TableCellType.BOOLEAN;
+                    if (initCell.getBooleanCellValue()) {
                         value = "true";
                     } else {
                         value = "false";
                     }
-                    break;
+                }
             }
         }
         return new TableCell(value, type);
     }
 
-    private static Row readColumnNames(Sheet myExcelSheet, int line, int fromCol, int toCol){
-        Row row = new Row();
-        for (int i = fromCol; i <= toCol; i++){
-            row.getRow().add(convertCell(myExcelSheet.getRow(line).getCell(i)));
+    private static Date stringToDate(String string) throws IOException{
+        String[] parts = new String[0];
+        String regex = "";
+        ArrayList<Integer> partsNum = new ArrayList<>();
+        if(string.contains(".")){
+            parts = string.split("\\.");
+            regex = ".";
+        } else if(string.contains("-")){
+            parts = string.split("-");
+            regex = "-";
+        } else if(string.contains(" ")){
+            parts = string.split(" ");
+            regex = " ";
+        } else if(string.contains("/")){
+            parts = string.split("/");
+            regex = "/";
         }
-        return row;
-    }
-
-    private static String getFileExtension(File file) {
-        if (file == null) {
-            return "";
+        if(parts.length == 0){
+            throw new IOException("Не удается преобразовать строковое значение к типу DATE");
         }
-        String name = file.getName();
-        int i = name.lastIndexOf('.');
-        return i > 0 ? name.substring(i + 1) : "";
+        for(String part : parts){
+            try{
+                partsNum.add(Integer.parseInt(part));
+            } catch(NumberFormatException ex){
+                throw new IOException("Не удается преобразовать строковое значение к типу DATE", ex);
+            }
+        }
+        String format;
+        if(partsNum.get(0) < 32 && partsNum.get(1) < 13 && partsNum.get(2) < 2100){
+            format = "dd" + regex + "MM" + regex;
+            if(partsNum.get(2) < 100){
+                format += "yy";
+            } else{
+                format += "yyyy";
+            }
+        } else if(partsNum.get(0) < 2100 && partsNum.get(1) < 13 && partsNum.get(2) < 32){
+            if(partsNum.get(0) < 100){
+                format = "yy";
+            } else{
+                format = "yyyy";
+            }
+            format += regex + "MM" + regex + "dd";
+        } else{
+            throw new IOException("Не удается преобразовать строковое значение к типу DATE");
+        }
+        try{
+            return new SimpleDateFormat(format).parse(string);
+        } catch (ParseException ex){
+            throw new IOException("Не удается преобразовать строковое значение к типу DATE", ex);
+        }
     }
-
 }

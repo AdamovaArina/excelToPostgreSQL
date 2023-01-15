@@ -15,7 +15,7 @@ public class ConnectorToPostgreSQL {
         }
         try {
             dbConnection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/excelToPostgreSQL",
-                    "postgres", "1234567890");
+                    "postgres", "postgress");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();

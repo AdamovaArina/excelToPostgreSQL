@@ -4,8 +4,6 @@ import beans.Table;
 import db.ConnectorToPostgreSQL;
 import db.ConverterToPostgreSQL;
 import excel.ConverterFromExcel;
-import excel.XlsConverterFromExcel;
-import excel.XlsxConverterFromExcel;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,31 +14,26 @@ import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.TreeSet;
 
 public class Main extends Application{
     private static Stage previewStage;
     private static Label data1;
     private static Label data2;
-    private static Label header1;
-
-    private static int fromCol;
-    private static int toCol;
-    private static int fromRow;
-    private static int toRow;
-    private static int nameRow;
-    private static String tableName;
-    //private static int sheetNumber;
+    static TreeSet<Integer> rows = new TreeSet<>();
+    static TreeSet<Integer> columns = new TreeSet<>();
     private static Sheet currentSheet;
+    private static ProxyTable pt;
+
+    private static Workbook book = null;
 
     public static void main(String[] args) {
         Application.launch();
@@ -67,13 +60,6 @@ public class Main extends Application{
     }
 
     private static void showFilePreview(Stage parent) throws IOException {
-
-        //HSSFWorkbook book = new HSSFWorkbook(new FileInputStream(file));
-        //HSSFSheet sheet = book.getSheetAt(sheetNumber);
-
-        //Workbook book = new Workbook(new FileInputStream(file));
-        //Sheet sheet = book.getSheetAt(sheetNumber);
-
         int rowLast = currentSheet.getLastRowNum();
         int columnLast = getLastColNum(currentSheet);
 
@@ -92,7 +78,7 @@ public class Main extends Application{
         HBox hb = new HBox();
         hb.getChildren().addAll(createOkButton(), createCancelButton());
         hb.setSpacing(10);
-        vb.getChildren().addAll(gp, createTableNameInput(), hb);
+        vb.getChildren().addAll(gp, hb);
         vb.setSpacing(10);
 
         ScrollPane sp = new ScrollPane(vb);
@@ -110,34 +96,6 @@ public class Main extends Application{
 
 
     }
-
-    /*public static GridPane createGridPane(ProxyTable pt, HSSFSheet sheet){
-        GridPane gp = new GridPane();
-        gp.setStyle("-fx-background-color: white");
-        for (int idx = 0; idx < pt.getCells().size(); idx++){
-            var current = pt.getCells().get(idx);
-            var l = createLabel(current.getValue(), current.getWidth(), current.getHeight(),
-                    current.getX(), current.getY());
-            gp.add(l, current.getX(), current.getY(), current.getWidthCount(), current.getHeightCount());
-        }
-
-        int rowLast = sheet.getLastRowNum();
-        int columnLast = getLastColNum(sheet);
-        //установка ширины столбцов
-        for (int i = 0; i <= columnLast; i++) {
-            gp.getColumnConstraints().add(new ColumnConstraints(2.0 * sheet.getColumnWidth(i) / 72));
-        }
-        //и строк
-        for (int j = 0; j <= rowLast; j++) {
-            if (sheet.getRow(j) != null) {
-                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getRow(j).getHeight() / 72));
-            } else {
-                gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getDefaultRowHeight() / 72));
-            }
-        }
-
-        return gp;
-    }*/
 
     public static GridPane createGridPane(ProxyTable pt, Sheet sheet){
         GridPane gp = new GridPane();
@@ -168,13 +126,18 @@ public class Main extends Application{
     }
 
     private static Stage createSheetChooser(Stage parent, File file) throws IOException {
-        FileInputStream is = new FileInputStream(file);
-        //HSSFWorkbook book = new HSSFWorkbook(is);
-
+        if (book != null){
+            try {
+                book.close();
+                book = null;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         String name = file.getName();
         int i = name.lastIndexOf('.');
         String ext =  i > 0 ? name.substring(i + 1) : "";
-        Workbook book = switch (ext) {
+        book = switch (ext) {
             case "xlsx" -> new XSSFWorkbook(new FileInputStream(file));
             case "xls" -> new HSSFWorkbook(new FileInputStream(file));
             default -> null;
@@ -210,27 +173,13 @@ public class Main extends Application{
         label.setStyle("-fx-font-size: 16px");
 
         HBox hb = new HBox();
-        hb.getChildren().addAll(createBackButton(stage), createSheetChooseButton(stage, file));
+        hb.getChildren().addAll(createBackButton(stage), createSheetChooseButton(stage));
         hb.setSpacing(40);
         hb.setAlignment(Pos.CENTER);
         vb.getChildren().addAll(label, cb, hb);
 
         return stage;
     }
-
-    /*private static int getLastColNum(HSSFSheet sheet) {
-        int columnLast = 0;
-        int rowLast = sheet.getLastRowNum();
-        for (int i = 0; i <= rowLast; ++i) {
-            var row = sheet.getRow(i);
-            if (row != null) {
-                if (row.getLastCellNum() > columnLast) {
-                    columnLast = row.getLastCellNum();
-                }
-            }
-        }
-        return columnLast;
-    }*/
 
     private static int getLastColNum(Sheet sheet) {
         int columnLast = 0;
@@ -306,8 +255,8 @@ public class Main extends Application{
         btn.setOnAction(event -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Выберете файл");
-            //fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLS", "*.xls"));
-            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLSX", "*.xlsx", "XLS", "*.xls"));
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLSX", "*.xlsx",
+                    "XLS", "*.xls"));
             File file = fileChooser.showOpenDialog(null);
             if (file != null) { //если файл открылся
                 try {
@@ -344,8 +293,8 @@ public class Main extends Application{
                     }
                     long bufferTime = System.nanoTime(); // для тестирования
                     Table buffer = ConverterFromExcel.readTableFromExcel(currentSheet,
-                            nameRow, fromCol, toCol, fromRow, toRow, tableName);
-                    ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer);
+                            fromCol, toCol, fromRow, toRow);
+                    //ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer);
                     System.out.println("Загрузка в бд");
                     System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
                     Alert a = new Alert(Alert.AlertType.INFORMATION);
@@ -372,7 +321,7 @@ public class Main extends Application{
         return btn;
     }
 
-    private static Button createSheetChooseButton(Stage stage, File file) {
+    private static Button createSheetChooseButton(Stage stage) {
         Button button = new Button("Ок");
         button.setStyle("-fx-font-size:16");
         button.setMinWidth(60);
@@ -407,18 +356,52 @@ public class Main extends Application{
         btn.setStyle("-fx-font-size:16");
         btn.setMinWidth(60);
         btn.setMinHeight(20);
-        btn.setOnAction(event -> stage.close());
+        btn.setOnAction(event ->
+            {
+                stage.close();
+                try {
+                    book.close();
+                    book = null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         return btn;
     }
 
-    private static TextField createTableNameInput() {
-        TextField textField = new TextField();
-        textField.setMaxWidth(200);
-        textField.setMinHeight(20);
-        textField.setPromptText("Введите название таблицы");
-        textField.textProperty().addListener((observable, oldValue, newValue) -> tableName = newValue);
-        return textField;
+    private static void fillRowNums(){
+        for(int i = 0; i < pt.getCells().size(); i++){
+            rows.add(i);
+        }
     }
 
+    private static void chooseColumn(int x){
+        columns.add(x);
+        for(ProxyCell pc : pt.getCells()){
+            if(pc.getX() == x && pc.getColour().equals("white")){
+                pc.setColour("#b6d7a8");
+            }
+            //todo: перерисовка
+        }
+    }
 
+    private static void cancelColumn(int x){
+        columns.remove(x);
+        for(ProxyCell pc : pt.getCells()){
+            if(pc.getX() == x && pc.getColour().equals("#b6d7a8"));{
+                pc.setColour("white");
+            }
+            //todo: перерисовка
+        }
+    }
+
+    private static void chooseNamesRow(int y){
+        rows.remove(y);
+        for(ProxyCell pc : pt.getCells()){
+            if(pc.getY() == y && pc.getColour().equals("#b6d7a8"));{
+                pc.setColour("white");
+            }
+            //todo: перерисовка
+        }
+    }
 }

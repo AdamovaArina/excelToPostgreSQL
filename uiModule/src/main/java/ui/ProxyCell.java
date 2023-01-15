@@ -1,6 +1,6 @@
 package ui;
 
-import beans.CellType;
+import beans.TableCellType;
 
 public class ProxyCell {
     private int x;
@@ -10,9 +10,10 @@ public class ProxyCell {
     private int widthCount;
     private int heightCount;
     private String value;
-    private CellType type;
+    private TableCellType type;
+    private String colour = "white";
 
-    public ProxyCell(int x, int y, int width, int height, int widthCount, int heightCount, String value, CellType type) {
+    public ProxyCell(int x, int y, int width, int height, int widthCount, int heightCount, String value, TableCellType type) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -49,5 +50,13 @@ public class ProxyCell {
 
     public int getHeightCount(){
         return heightCount;
+    }
+
+    public String getColour() {
+        return colour;
+    }
+
+    public void setColour(String colour) {
+        this.colour = colour;
     }
 }

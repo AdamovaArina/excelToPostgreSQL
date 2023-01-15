@@ -1,6 +1,6 @@
 package beans;
 
-public enum CellType {
+public enum TableCellType {
     BLANK,
     BOOLEAN,
     DATE,
