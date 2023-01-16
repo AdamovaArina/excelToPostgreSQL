@@ -1,7 +1,6 @@
 package ui;
 
 import beans.Table;
-import db.ConnectorToPostgreSQL;
 import db.ConverterToPostgreSQL;
 import excel.ConverterFromExcel;
 import javafx.application.Application;
@@ -26,12 +25,11 @@ import java.util.TreeSet;
 
 public class Main extends Application{
     private static Stage previewStage;
-    private static Label data1;
-    private static Label data2;
     static TreeSet<Integer> rows = new TreeSet<>();
     static TreeSet<Integer> columns = new TreeSet<>();
     private static Sheet currentSheet;
     private static ProxyTable pt;
+    private static GridPane gp;
 
     private static Workbook book = null;
 
@@ -66,12 +64,12 @@ public class Main extends Application{
         VBox vb = new VBox();
 
         long bufferTime = System.nanoTime(); // для тестирования
-        ProxyTable pt = ProxyTableConverter.createProxyTable(currentSheet, rowLast, columnLast);
+        pt = ProxyTableConverter.createProxyTable(currentSheet, rowLast, columnLast);
         System.out.println("Считывание данных из файла");
         System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
 
         bufferTime = System.nanoTime(); // для тестирования
-        GridPane gp = createGridPane(pt, currentSheet);
+        gp = createGridPane(pt, currentSheet);
         System.out.println("Создание GridPane");
         System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
 
@@ -103,7 +101,7 @@ public class Main extends Application{
         for (int idx = 0; idx < pt.getCells().size(); idx++){
             var current = pt.getCells().get(idx);
             var l = createLabel(current.getValue(), current.getWidth(), current.getHeight(),
-                    current.getX(), current.getY());
+                    current.getX());
             gp.add(l, current.getX(), current.getY(), current.getWidthCount(), current.getHeightCount());
         }
 
@@ -121,7 +119,7 @@ public class Main extends Application{
                 gp.getRowConstraints().add(new RowConstraints(6.0 * sheet.getDefaultRowHeight() / 72));
             }
         }
-
+        fillRowNums();
         return gp;
     }
 
@@ -195,48 +193,23 @@ public class Main extends Application{
         return columnLast;
     }
 
-    private static Label createLabel(String text, double width, double height, int col, int row) {
+    private static Label createLabel(String text, double width, double height, int col) {
         var l = new Label(text);
         l.setMinWidth(width * 2.0 / 72);
         l.setMinHeight(height * 6.0 / 72);
         l.setWrapText(true);
         l.setStyle("-fx-border-color: gray; -fx-border-width: 1px; -fx-background-color: white;");
-        createContextMenu(l, col, row);
+        createContextMenu(l, col);
         return l;
     }
 
-    private static void createContextMenu(Label l, int col, int row) {
+    private static void createContextMenu(Label l, Integer col) {
         ContextMenu cm = new ContextMenu();
-        MenuItem d1 = new MenuItem("Установить левую верхнюю ячейку диапазона данных");
-        d1.setOnAction(actionEvent -> {
-            if (data1 != null) {
-                data1.setStyle(l.getStyle() + "-fx-background-color: white;");
-            }
-            l.setStyle(l.getStyle() + "-fx-background-color: #b6d7a8;");
-            fromCol = col;
-            fromRow = row;
-            data1 = l;
-        });
-        MenuItem d2 = new MenuItem("Установить правую нижнюю ячейку диапазона данных");
-        d2.setOnAction(actionEvent -> {
-            if (data2 != null) {
-                data2.setStyle(l.getStyle() + "-fx-background-color: white;");
-            }
-            l.setStyle(l.getStyle() + "-fx-background-color: #a7ca99;");
-            toCol = col;
-            toRow = row;
-            data2 = l;
-        });
-        MenuItem h1 = new MenuItem("Установить любую ячейку диапазона заголовков");
-        h1.setOnAction(actionEvent -> {
-            if (header1 != null) {
-                header1.setStyle(l.getStyle() + "-fx-background-color: white;");
-            }
-            l.setStyle(l.getStyle() + "-fx-background-color: #91b9df;");
-            nameRow = row;
-            header1 = l;
-        });
-        cm.getItems().addAll(d1, d2, h1);
+        MenuItem d1 = new MenuItem("Добавить этот столбец в список столбцов");
+        d1.setOnAction(actionEvent -> chooseColumn(col));
+        MenuItem d2 = new MenuItem("Удалить этот столбец из списка столбцов");
+        d2.setOnAction(actionEvent -> cancelColumn(col));
+        cm.getItems().addAll(d1, d2);
         l.setContextMenu(cm);
     }
 
@@ -286,15 +259,11 @@ public class Main extends Application{
         btn.setMinWidth(60);
         btn.setMinHeight(20);
         btn.setOnAction(event -> {
-            if (data1 != null && data2 != null && header1 != null) { //если выбраны все нужные значения
+            if (rows.size() != 0 && columns.size() != 0) { //если выбраны все нужные значения
                 try {
-                    if (tableName == null || tableName.equals("")) {
-                        throw new IOException("Не введено название таблицы");
-                    }
                     long bufferTime = System.nanoTime(); // для тестирования
-                    Table buffer = ConverterFromExcel.readTableFromExcel(currentSheet,
-                            fromCol, toCol, fromRow, toRow);
-                    //ConverterToPostgreSQL.createAndFillTable(ConnectorToPostgreSQL.getDBConnection(), buffer);
+                    Table buffer = ConverterFromExcel.readTableFromExcel(currentSheet, rows, columns);
+                    ConverterToPostgreSQL.insertIntoTemporaryTable(buffer);
                     System.out.println("Загрузка в бд");
                     System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
                     Alert a = new Alert(Alert.AlertType.INFORMATION);
@@ -371,27 +340,34 @@ public class Main extends Application{
 
     private static void fillRowNums(){
         for(int i = 0; i < pt.getCells().size(); i++){
-            rows.add(i);
+            if(!rows.contains(pt.getCells().get(i).getY()))
+                rows.add(pt.getCells().get(i).getY());
         }
     }
 
     private static void chooseColumn(int x){
-        columns.add(x);
-        for(ProxyCell pc : pt.getCells()){
-            if(pc.getX() == x && pc.getColour().equals("white")){
-                pc.setColour("#b6d7a8");
+        if(!columns.contains(x)) {
+            columns.add(x);
+            //перекраска всего столбца
+            for(var label : gp.getChildren()) {
+                //проверка, что ячейка столбца лежит в выбранных строках
+                if(gp.getColumnIndex(label) == x) {
+                    if (rows.contains(gp.getRowIndex(label))) {
+                        label.setStyle(label.getStyle() + "-fx-background-color: #b6d7a8;");
+                    }
+                }
             }
-            //todo: перерисовка
         }
     }
 
     private static void cancelColumn(int x){
-        columns.remove(x);
-        for(ProxyCell pc : pt.getCells()){
-            if(pc.getX() == x && pc.getColour().equals("#b6d7a8"));{
-                pc.setColour("white");
+        if(columns.contains(x)) {
+            columns.remove(x);
+            for(var label : gp.getChildren()) {
+                if(gp.getColumnIndex(label) == x) {
+                    label.setStyle(label.getStyle() + "-fx-background-color: white;");
+                }
             }
-            //todo: перерисовка
         }
     }
 
