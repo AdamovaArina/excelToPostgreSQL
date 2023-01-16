@@ -340,8 +340,12 @@ public class Main extends Application{
 
     private static void fillRowNums(){
         for(int i = 0; i < pt.getCells().size(); i++){
-            if(!rows.contains(pt.getCells().get(i).getY()))
-                rows.add(pt.getCells().get(i).getY());
+            int y = pt.getCells().get(i).getY();
+            if(!rows.contains(y)){
+                if(!pt.isRowContainsUnitedItems(y)){
+                    rows.add(pt.getCells().get(i).getY());
+                }
+            }
         }
     }
 
