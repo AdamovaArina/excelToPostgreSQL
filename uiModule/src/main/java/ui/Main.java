@@ -1,6 +1,7 @@
 package ui;
 
 import beans.Table;
+import db.ConnectorToPostgreSQL;
 import db.ConverterToPostgreSQL;
 import excel.ConverterFromExcel;
 import javafx.application.Application;
@@ -25,6 +26,8 @@ import java.util.TreeSet;
 
 public class Main extends Application{
     private static Stage previewStage;
+
+    //todo: добавить сброс после загрузки и после открытия новой страницы / файла
     static TreeSet<Integer> rows = new TreeSet<>();
     static TreeSet<Integer> columns = new TreeSet<>();
     private static Sheet currentSheet;
@@ -263,7 +266,7 @@ public class Main extends Application{
                 try {
                     long bufferTime = System.nanoTime(); // для тестирования
                     Table buffer = ConverterFromExcel.readTableFromExcel(currentSheet, rows, columns);
-                    ConverterToPostgreSQL.insertIntoTemporaryTable(buffer);
+                    ConverterToPostgreSQL.executeCommand(ConnectorToPostgreSQL.getDBConnection(), ConverterToPostgreSQL.insertIntoTemporaryTable(buffer.toTempTable()));
                     System.out.println("Загрузка в бд");
                     System.out.println((System.nanoTime() - bufferTime)/1000000 + " мс"); // для тестирования
                     Alert a = new Alert(Alert.AlertType.INFORMATION);

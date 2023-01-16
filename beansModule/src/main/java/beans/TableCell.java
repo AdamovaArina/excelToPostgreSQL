@@ -44,8 +44,7 @@ public class TableCell {
             case("Nov"): parts[1] = "11";
             case("Dec"): parts[1] = "12";
         }
-        value = parts[1] + " " + parts[2] + " " +  parts[5];
-        return "to_date('" + value + ", 'MM DD YYYY')";
+        return "date '" + parts[5] + "-" + parts[1] + "-" +  parts[2] + "'";
     }
 
     private String numToString(){
