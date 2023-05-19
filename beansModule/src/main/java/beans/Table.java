@@ -84,7 +84,7 @@ public class Table {
 
     private void addNullCol(TableCellType type, int idx){
         for(Row row : table){
-            row.getRow().add(idx, new TableCell(null, type));
+            row.getRow().add(idx, new TableCell(-1, null, type));
         }
     }
 
@@ -140,6 +140,15 @@ public class Table {
             cntr = 0;
         }
         return this;
+    }
+
+    public Integer findColNum(int colNum){
+        for(int i = 0; i < table.get(0).getRow().size(); i++){
+            if(table.get(0).getRow().get(i).getColNum() == colNum){
+                return i;
+            }
+        }
+        return null;
     }
 
     public Table toTempTable() throws Exception{

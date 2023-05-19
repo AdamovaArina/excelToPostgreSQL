@@ -6,8 +6,10 @@ import java.util.ArrayList;
 public class TableCell {
     private final String value;
     private TableCellType type;
+    private final Integer colNum;
 
-    public TableCell(String value, TableCellType type){
+    public TableCell(Integer colNum, String value, TableCellType type){
+        this.colNum = colNum;
         this.value = value;
         this.type = type;
     }
@@ -104,5 +106,9 @@ public class TableCell {
                 return value;
             }
         }
+    }
+
+    public int getColNum() {
+        return colNum;
     }
 }

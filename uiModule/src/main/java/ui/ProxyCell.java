@@ -1,19 +1,23 @@
 package ui;
 
-import beans.TableCellType;
+
+import javafx.scene.paint.Color;
 
 public class ProxyCell {
     private int x;
     private int y;
+
+    private int xPix;
+    private int yPix;
     private int width;
     private int height;
     private int widthCount;
     private int heightCount;
     private String value;
-    private TableCellType type;
-    private String colour = "white";
+    private Color color = Color.WHITE;
+    private int page = 1;
 
-    public ProxyCell(int x, int y, int width, int height, int widthCount, int heightCount, String value, TableCellType type) {
+    public ProxyCell(int x, int y, int width, int height, int widthCount, int heightCount, String value) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -21,7 +25,6 @@ public class ProxyCell {
         this.widthCount = widthCount;
         this.heightCount = heightCount;
         this.value = value;
-        this.type = type;
     }
 
     public String getValue(){
@@ -52,11 +55,45 @@ public class ProxyCell {
         return heightCount;
     }
 
-    public String getColour() {
-        return colour;
+    public Color getColor() {
+        return color;
     }
 
-    public void setColour(String colour) {
-        this.colour = colour;
+    public void setColor(Color color) {
+        this.color = color;
     }
+
+    public int getPage() {
+        return page;
+    }
+
+    public void setPage(int page) {
+        this.page = page;
+    }
+
+    public int getXPix() {
+        return xPix;
+    }
+
+    public void setXPix(int xPix) {
+        this.xPix = xPix;
+    }
+
+    public int getYPix() {
+        return yPix;
+    }
+
+    public void setYPix(int yPix) {
+        this.yPix = yPix;
+    }
+
+    public boolean equals(ProxyCell other){
+        return this.x == other.getX() && this.xPix == other.getXPix() && this.width == other.getWidth() &&
+                this.widthCount == other.getWidthCount() && this.value.equals(other.getValue());
+    }
+
+    public boolean equalsValue(ProxyCell other){
+        return this.value.equals(other.getValue()) && this.x == other.getX();
+    }
+
 }

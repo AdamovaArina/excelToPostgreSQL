@@ -1,8 +1,7 @@
 package ui;
 
-import beans.TableCellType;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
 
@@ -11,7 +10,7 @@ public class ProxyTableConverter {
         ProxyTable pt = new ProxyTable();
 
         for (int i = 0; i <= rowLast; ++i) {
-            var row = sheet.getRow(i);
+            Row row = sheet.getRow(i);
             for (int j = 0; j <= columnLast; ++j) {
                 //когда ячейка или строка не определена
                 if (row == null || row.getCell(j) == null) {
@@ -21,12 +20,12 @@ public class ProxyTableConverter {
                     } else {
                         height = row.getHeight();
                     }
-                    var proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), height, 1, 1,"", TableCellType.BLANK);
+                    ProxyCell proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), height, 1, 1,"");
                     pt.addCell(proxyCell);
                 }
                 //когда определена
                 else {
-                    var c = row.getCell(j);
+                    Cell c = row.getCell(j);
                     CellRangeAddress r = null;
                     //проверяем, не принадлежит ли ячейка объединению ячеек
                     for (int k = 0; k < sheet.getMergedRegions().size(); ++k) {
@@ -36,7 +35,7 @@ public class ProxyTableConverter {
                     }
                     //если не принадлежит - добавляем
                     if (r == null) {
-                        var proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), row.getHeight(), 1, 1, c.toString(), convertCellType(c));
+                        ProxyCell proxyCell = new ProxyCell(j, i, sheet.getColumnWidth(j), row.getHeight(), 1, 1, c.toString());
                         pt.addCell(proxyCell);
                     } else {
                         if (r.getFirstRow() == i && r.getFirstColumn() == j) {
@@ -46,14 +45,14 @@ public class ProxyTableConverter {
                                 width += sheet.getColumnWidth(k);
                             }
                             for (int k = r.getFirstRow(); k <= r.getLastRow(); ++k) {
-                                var tmp = sheet.getRow(k);
+                                Row tmp = sheet.getRow(k);
                                 if (tmp == null) {
                                     height += sheet.getDefaultRowHeight();
                                 } else {
                                     height += tmp.getHeight();
                                 }
                             }
-                            var proxyCell = new ProxyCell(j, i, width, height, r.getLastColumn() - j + 1, r.getLastRow() - i + 1, c.toString(), convertCellType(c));
+                            ProxyCell proxyCell = new ProxyCell(j, i, width, height, r.getLastColumn() - j + 1, r.getLastRow() - i + 1, c.toString());
                             pt.addCell(proxyCell);
                         }
                     }
@@ -64,7 +63,7 @@ public class ProxyTableConverter {
         return pt;
     }
 
-    public static TableCellType convertCellType(Cell initCell){
+    /*public static TableCellType convertCellType(Cell initCell){
         if (initCell == null){
             return TableCellType.BLANK;
         } else {
@@ -85,5 +84,5 @@ public class ProxyTableConverter {
                     return TableCellType.BLANK;
             }
         }
-    }
+    }*/
 }

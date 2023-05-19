@@ -22,7 +22,7 @@ public class ConverterFromExcel {
         for(Integer row : rows){
             Row bufferRow = new Row();
             for(Integer column : columns){
-                bufferRow.getRow().add(convertCell(sheet.getRow(row).getCell(column)));
+                bufferRow.getRow().add(convertCell(sheet.getRow(row).getCell(column), column));
             }
             if(!bufferRow.isEmpty()){
                 result.getTable().add(bufferRow);
@@ -31,7 +31,7 @@ public class ConverterFromExcel {
         return result;
     }
 
-    private static TableCell convertCell(Cell initCell){
+    private static TableCell convertCell(Cell initCell, int colNum){
         String value = null;
         TableCellType type = null;
         if (initCell == null){
@@ -52,14 +52,14 @@ public class ConverterFromExcel {
                 case STRING -> {
                     type = TableCellType.STRING;
                     value = initCell.getStringCellValue();
-                    if(new TableCell(value, type).isDate()){
+                    if(new TableCell(colNum, value, type).isDate()){
                         type = TableCellType.DATE;
                         try{
                             value = stringToDate(value).toString();
                         } catch (IOException ex){
                             ex.printStackTrace();
                         }
-                    } else if(new TableCell(value, type).isNumeric()){
+                    } else if(new TableCell(colNum, value, type).isNumeric()){
                         type = TableCellType.NUMERIC;
                     }
                 }
@@ -77,7 +77,7 @@ public class ConverterFromExcel {
                 }
             }
         }
-        return new TableCell(value, type);
+        return new TableCell(colNum, value, type);
     }
 
     private static Date stringToDate(String string) throws IOException{
